@@ -413,7 +413,12 @@ body{
 /* ===== guided tour ===== */
 .guidepulse{outline:3px solid #1F7A43;outline-offset:3px;border-radius:14px;animation:gpulse 1.15s ease-in-out infinite;position:relative;z-index:25}
 @keyframes gpulse{0%,100%{outline-color:rgba(31,122,67,.95)}50%{outline-color:rgba(31,122,67,.2)}}
-.guidetip{position:absolute;z-index:60;background:#0F3D27;color:#fff;font-size:12px;font-weight:700;padding:9px 13px;border-radius:12px;box-shadow:0 8px 22px rgba(0,0,0,.4);display:none;max-width:210px;line-height:1.35;pointer-events:none}
+.guidetip{position:absolute;z-index:60;background:#0F3D27;color:#fff;font-size:12.5px;font-weight:700;padding:9px 13px;border-radius:12px;box-shadow:0 8px 22px rgba(0,0,0,.4);display:none;max-width:220px;line-height:1.35;pointer-events:none}
+.guidefinger{position:absolute;z-index:62;font-size:30px;display:none;pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
+.guidefinger.up{animation:fingup 0.85s ease-in-out infinite}
+.guidefinger.down{animation:fingdown 0.85s ease-in-out infinite}
+@keyframes fingup{0%,100%{transform:translateY(2px)}50%{transform:translateY(-6px)}}
+@keyframes fingdown{0%,100%{transform:translateY(-2px)}50%{transform:translateY(6px)}}
 </style>
 </head>
 <body>
@@ -787,6 +792,7 @@ body{
   <div class="navbar-os"><span class="tri"></span><span class="sq"></span><span class="ham"></span></div>
 </div>
 
+<div class="guidefinger" id="guideFinger"></div>
 <div class="guidetip" id="guideTip"></div>
 </div><!-- screen-wrap -->
 </div><!-- phone -->
@@ -809,26 +815,37 @@ function go(id){
 }
 /* ===== guided tour ===== */
 var GUIDE=[
- {sel:'#s1 .tile.nutri',text:'👆 Tap “Nutrition” to start',pos:'below'},
- {sel:'#recBar',text:'👆 Tap your coaching tip',pos:'below'},
- {sel:'#s2 .hero .cta',text:'👆 Order Mr. Chow',pos:'above'},
- {sel:'#s4 .placebtn',text:'👆 Place your order',pos:'above'},
- {sel:'#s2 .lm',text:'👆 Tap your logged Mr. Chow',pos:'below'}
+ {sel:'#s1 .tile.nutri',text:'Tap “Nutrition” to start',pos:'below'},
+ {sel:'#recBar',text:'Tap here to jump to your meal',pos:'below'},
+ {sel:'#s2 .hero .cta',text:'Tap to order Mr. Chow',pos:'above'},
+ {sel:'#s4 .placebtn',text:'Tap to place your order',pos:'above'},
+ {sel:'#s2 .lm',text:'Tap your logged meal to see the analysis',pos:'below'}
 ];
 var gStep=0,gOn=true;
 function clearPulse(){var ps=document.querySelectorAll('.guidepulse');for(var i=0;i<ps.length;i++)ps[i].classList.remove('guidepulse');}
 function showGuide(){
-  var tip=document.getElementById('guideTip');clearPulse();if(tip)tip.style.display='none';
+  var tip=document.getElementById('guideTip'),fin=document.getElementById('guideFinger');clearPulse();
+  if(tip)tip.style.display='none';if(fin)fin.style.display='none';
   if(!gOn||gStep>=GUIDE.length||!tip)return;
   var st=GUIDE[gStep],el=document.querySelector(st.sel);if(!el)return;
   var scr=el.closest?el.closest('.screen'):null;if(scr&&!scr.classList.contains('active'))return;
   el.classList.add('guidepulse');
   var wrap=document.querySelector('.screen-wrap'),r=el.getBoundingClientRect(),w=wrap.getBoundingClientRect();
+  var cx=r.left-w.left+r.width/2, elTop=r.top-w.top, elBot=r.bottom-w.top;
+  var above=st.pos==='above';
+  // pointing finger, placed right at the element edge
+  fin.textContent=above?'👇':'👆';
+  fin.className='guidefinger '+(above?'down':'up');
+  fin.style.display='block';
+  var fy=above?(elTop-42):(elBot+2);
+  fy=Math.max(2,Math.min(fy,w.height-42));
+  fin.style.left=Math.max(4,Math.min(cx-16,w.width-36))+'px';
+  fin.style.top=fy+'px';
+  // instruction bubble, just beyond the finger
   tip.textContent=st.text;tip.style.display='block';
-  var left=r.left-w.left+r.width/2-tip.offsetWidth/2;
-  left=Math.max(8,Math.min(left,w.width-tip.offsetWidth-8));
-  var top=st.pos==='above'?(r.top-w.top-tip.offsetHeight-12):(r.bottom-w.top+12);
-  top=Math.max(8,Math.min(top,w.height-tip.offsetHeight-8));
+  var left=Math.max(8,Math.min(cx-tip.offsetWidth/2,w.width-tip.offsetWidth-8));
+  var top=above?(elTop-42-tip.offsetHeight-2):(elBot+44);
+  top=Math.max(6,Math.min(top,w.height-tip.offsetHeight-6));
   tip.style.left=left+'px';tip.style.top=top+'px';
 }
 /* ---- meal registry (single source of truth) ---- */
