@@ -279,6 +279,21 @@ body{
 .cam2{flex:0 0 auto;width:54px;height:54px;border-radius:50%;background:var(--cenz-green);display:flex;align-items:center;justify-content:center;margin:0 4px -8px;box-shadow:0 6px 14px rgba(0,90,40,.3);cursor:pointer}
 .cam2 svg{width:23px;height:23px}
 .toast.snack{bottom:84px;background:#0F3D27;max-width:300px;font-weight:600;line-height:1.4}
+/* order confirmation */
+.orderconf{position:absolute;inset:0;background:rgba(13,28,20,.55);display:none;align-items:center;justify-content:center;z-index:55;padding:26px}
+.orderconf.show{display:flex;animation:ocfade .25s ease}
+@keyframes ocfade{from{opacity:0}to{opacity:1}}
+.oc-card{background:#fff;border-radius:24px;padding:30px 24px 22px;text-align:center;width:100%;max-width:296px;box-shadow:0 24px 60px rgba(0,0,0,.4);animation:occard .42s cubic-bezier(.2,.7,.3,1)}
+@keyframes occard{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.oc-check{width:66px;height:66px;border-radius:50%;background:#1F8A4C;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;animation:occheck .5s cubic-bezier(.2,.8,.3,1.5) .08s both}
+.oc-check svg{width:32px;height:32px}
+@keyframes occheck{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
+.oc-card h3{font-size:22px;font-weight:800;color:#1A1B19}
+.oc-card p{font-size:13.5px;color:#6e706a;margin-top:8px;line-height:1.45}
+.oc-score{margin:16px 0 20px;background:#EAF3EC;color:#16613A;border-radius:30px;padding:9px 15px;font-size:13px;font-weight:700;display:inline-flex;align-items:center}
+.oc-score b{color:#2E9E5B;font-weight:900;margin:0 2px}
+.oc-btn{width:100%;background:#00B14F;color:#fff;font-weight:800;font-size:16px;padding:15px;border-radius:30px;border:none;cursor:pointer}
+.oc-btn:active{background:#079248}
 /* logged meals rail */
 .lm-head{display:flex;align-items:center;justify-content:space-between;padding:13px 18px 0}
 .lm-head h3{font-size:15px;font-weight:800}
@@ -695,7 +710,15 @@ body{
     <div class="totrow"><span class="tl">Total</span><span class="tv" id="co-total">S$24.20</span></div>
     <button class="placebtn" onclick="placeOrder()">Place Order</button>
   </div>
-  <div class="toast" id="toast">✅ Order placed! <span class="pl" id="toast-score">+8</span>&nbsp;Health Score logged. New score: <b id="toast-new">80</b></div>
+  <div class="orderconf" id="orderConf">
+    <div class="oc-card">
+      <div class="oc-check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
+      <h3>Order placed</h3>
+      <p id="oc-sub">Mr. Chow is on its way — arriving in about 32 min.</p>
+      <div class="oc-score">🩺 <b id="oc-score">+30</b>&nbsp;Health Score on delivery</div>
+      <button class="oc-btn" onclick="finishOrder()">View my dashboard</button>
+    </div>
+  </div>
   <div class="navbar-os"><span class="tri"></span><span class="sq"></span><span class="ham"></span></div>
 </div>
 
@@ -879,8 +902,6 @@ function order(key){
   document.getElementById('co-sub').textContent='S$'+m.p;
   document.getElementById('co-total').textContent='S$'+(parseFloat(m.p)+6.20).toFixed(2);
   document.getElementById('co-th').style.backgroundImage="url('"+m.img+"')";
-  document.getElementById('toast-score').textContent='+'+m.s;
-  document.getElementById('toast-new').textContent=Math.min(100,SCORE+m.s);
   BACKREF=document.getElementById('s3').classList.contains('active')?'s3':'s2';
   go('s4');
 }
@@ -914,20 +935,23 @@ function updateCoach(m){
 function placeOrder(){
   if(gOn&&gStep===3)gStep=4;
   var m=MEALS[CURRENT];
-  var t=document.getElementById('toast');t.classList.add('show');
+  document.getElementById('oc-sub').textContent=m.n+' is on its way — arriving in about 32 min.';
+  document.getElementById('oc-score').textContent='+'+m.s;
+  document.getElementById('orderConf').classList.add('show');
+}
+function finishOrder(){
+  var m=MEALS[CURRENT];
+  document.getElementById('orderConf').classList.remove('show');
   SCORE=Math.min(100,SCORE+m.s);
   LOGGED.forEach(function(x){x.justAdded=false;});
   LOGGED.unshift({n:m.n,t:'Just now · arriving',s:m.s,img:m.img,justAdded:true,kcal:m.kcal,adesc:m.adesc,nailed:m.nailed,omega:m.omega,coach:m.coach,rec:m.rec,power:m.power});
   for(var k in m.bump){if(MET[k])MET[k].p=Math.min(100,MET[k].p+m.bump[k]);}
-  setTimeout(function(){
-    t.classList.remove('show');
-    renderLogged();renderRings();updateScore();updateCoach(m);
-    document.getElementById('loggedWrap').style.display='block';
-    document.getElementById('loggedChev').textContent='▾';
-    go('s2');
-    var sc=document.querySelector('#s2 .scroll'),sec=document.getElementById('loggedSection');
-    setTimeout(function(){if(sc&&sec)sc.scrollTop=Math.max(0,sec.offsetTop-140);},80);
-  },1250);
+  renderLogged();renderRings();updateScore();updateCoach(m);
+  document.getElementById('loggedWrap').style.display='block';
+  document.getElementById('loggedChev').textContent='▾';
+  go('s2');
+  var sc=document.querySelector('#s2 .scroll'),sec=document.getElementById('loggedSection');
+  setTimeout(function(){if(sc&&sec)sc.scrollTop=Math.max(0,sec.offsetTop-140);},90);
 }
 function resetDemo(){
   SCORE=58;CURRENT='lox';gStep=0;gOn=true;
